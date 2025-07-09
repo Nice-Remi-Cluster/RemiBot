@@ -4,7 +4,7 @@ import os.path
 from maimai_py.utils import ScoreCoefficient
 from nonebot import get_plugin_config
 from wahlap_mai_ass_expander import MaiSimClient
-from .config import Config
+from src.plugins.maimaidx.plugins.maicn.config import Config
 from maimai_py import MaimaiClient, DivingFishProvider, LXNSProvider, LevelIndex, FCType, FSType, RateType, SongType
 from maimai_py.models import Score as MaimaiPyScore
 from wahlap_mai_ass_expander.model import Score as MaiCNScore

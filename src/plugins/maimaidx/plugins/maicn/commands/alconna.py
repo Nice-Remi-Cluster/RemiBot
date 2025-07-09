@@ -2,15 +2,10 @@ from typing import Literal, Optional
 
 from arclet.alconna import Alconna, Subcommand, Args
 
-from .alias import alias_divingfish, alias_luoxue
+from ..alias import alias_divingfish, alias_luoxue
 
-# 调试用
-try:
-    from src.utils.helpers.alconna_helper import alc_header
-except ValueError as e:
-    if e.args[0] != "NoneBot has not been initialized.":
-        raise e
-    alc_header = "/"
+from src.utils.helpers.alconna_helper import alc_header
+
 
 lx_alc = Alconna(
     f"{alc_header}lxns",
@@ -20,6 +15,20 @@ lx_alc = Alconna(
         Args["bind_name?", str],
         help_text="添加落雪账号"
     ),
+    Subcommand(
+        "create",
+        help_text="为绑定的好友码创建对应的落雪档案",
+    ),
+)
+
+divingfish_alc = Alconna(
+    f"{alc_header}divingfish",
+    Subcommand(
+        "add",
+        Args["import_token", int],
+        Args["bind_name?", str],
+        help_text="使用Import-Token添加水鱼账号"
+    )
 )
 
 
@@ -54,5 +63,3 @@ maicn_alc = Alconna(
     )
 )
 
-if __name__ == "__main__":
-    print(maicn_alc.parse("/maicn update"))

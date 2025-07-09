@@ -31,7 +31,8 @@ alc = Alconna(
     Args["options", MultiVar(AnyString, flag="*")]
 )
 
-alc.shortcut(f"{alc_header_cn}随机数", command="/roll")
+alc.shortcut(f"{alc_header_cn}随机数", command=f"{alc_header}roll")
+alc.shortcut(f"{alc_header_cn}随机", command=f"{alc_header}roll")
 
 roll_cmd = on_alconna(alc, priority=5, block=True)
 
