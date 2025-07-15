@@ -16,3 +16,8 @@ class Config(BaseModel):
     maimai_arcade_aes_iv: str
     maimai_arcade_obfuscate_param: str
 
+    proxy_host: str
+    proxy_port: int
+    proxy_username: str
+    proxy_password: str
+

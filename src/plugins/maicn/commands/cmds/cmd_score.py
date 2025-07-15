@@ -5,8 +5,8 @@ from nonebot import get_plugin_config
 from arclet.alconna import SubcommandResult
 from nonebot import require
 
-from src.plugins.maimaidx.plugins.maicn.alias import alias_luoxue, alias_divingfish
-from src.plugins.maimaidx.libraries.maimai_cn import maimai_py_client, lxns_provider, get_maimai_user_all_score, \
+from src.plugins.maicn.alias import alias_luoxue, alias_divingfish
+from src.plugins.maicn.libraries import maimai_py_client, lxns_provider, get_maimai_user_all_score, \
     mai_cn_score_to_maimaipy, divingfish_provider
 from nonebot.adapters.onebot.v11.event import MessageEvent
 from src.utils.helpers.remi_service_helper import RemiServiceHelper, UserBindType
@@ -15,9 +15,9 @@ require("nonebot_plugin_alconna")
 
 from nonebot_plugin_alconna import Query as AlcQuery
 
-from src.plugins.maimaidx.plugins.maicn.config import Config
+from src.plugins.maicn.config import Config
 
-from src.plugins.maimaidx.plugins.maicn.commands.matchers import maicn_matcher
+from src.plugins.maicn.commands.matchers import maicn_matcher
 
 config = get_plugin_config(Config)
 

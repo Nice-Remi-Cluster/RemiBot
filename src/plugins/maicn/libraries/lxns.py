@@ -2,7 +2,7 @@ from typing import TypedDict
 from loguru import logger
 import httpx
 
-from ..config import Config
+from src.plugins.maicn.config import Config
 from nonebot import get_plugin_config
 
 config = get_plugin_config(Config)
