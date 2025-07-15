@@ -59,12 +59,7 @@ def mai_client_constructor():
 
     if config.proxy_host:
         httpx_client = httpx.AsyncClient(
-            proxy=f"http://{config.proxy_host}:{config.proxy_port}",
-            headers={
-                "Proxy-Authorization": f"Basic {
-                    base64.b64encode(f'{config.proxy_username}:{config.proxy_password}'.encode('utf-8'))
-                }"
-            }
+            proxy=f"http://{config.proxy_username}:{config.proxy_password}@{config.proxy_host}:{config.proxy_port}",
         )
 
     return MaiSimClient(
