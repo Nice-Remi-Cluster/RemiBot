@@ -1,10 +1,10 @@
-import json
-import os.path
+import base64
 
+import httpx
 from maimai_py.utils import ScoreCoefficient
 from nonebot import get_plugin_config
 from wahlap_mai_ass_expander import MaiSimClient
-from src.plugins.maimaidx.plugins.maicn.config import Config
+from src.plugins.maicn.config import Config
 from maimai_py import MaimaiClient, DivingFishProvider, LXNSProvider, LevelIndex, FCType, FSType, RateType, SongType
 from maimai_py.models import Score as MaimaiPyScore
 from wahlap_mai_ass_expander.model import Score as MaiCNScore
@@ -55,11 +55,24 @@ async def mai_cn_score_to_maimaipy(maicn_scores: list[MaiCNScore]) -> list[Maima
     return scores
 
 def mai_client_constructor():
+    httpx_client = None
+
+    if config.proxy_host:
+        httpx_client = httpx.AsyncClient(
+            proxy=f"http://{config.proxy_host}:{config.proxy_port}",
+            headers={
+                "Proxy-Authorization": f"Basic {
+                    base64.b64encode(f'{config.proxy_username}:{config.proxy_password}'.encode('utf-8'))
+                }"
+            }
+        )
+
     return MaiSimClient(
         chip_id=config.maimai_arcade_chip_id,
         aes_key=config.maimai_arcade_aes_key,
         aes_iv=config.maimai_arcade_aes_iv,
         obfuscate_param=config.maimai_arcade_obfuscate_param,
+        httpx_client=httpx_client
     )
 
 async def get_maimai_uid(qr_code: str):

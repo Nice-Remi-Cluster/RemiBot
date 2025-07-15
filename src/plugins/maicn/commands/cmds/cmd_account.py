@@ -6,20 +6,20 @@ from arclet.alconna import SubcommandResult
 from nonebot import require
 from wahlap_mai_ass_expander.exceptions import QrCodeExpired, QrCodeInvalid
 
-from src.plugins.maimaidx.libraries.lxns import LXNSClient
-from src.plugins.maimaidx.plugins.maicn.alias import alias_luoxue, alias_divingfish
-from src.plugins.maimaidx.libraries.maimai_cn import get_maimai_user_preview_info
+from src.plugins.maicn.libraries.lxns import LXNSClient
+from src.plugins.maicn.alias import alias_luoxue, alias_divingfish
+from src.plugins.maicn.libraries import get_maimai_user_preview_info
 from nonebot.adapters.onebot.v11.event import MessageEvent
-from src.plugins.maimaidx.libraries.maimai_cn import get_maimai_uid
+from src.plugins.maicn.libraries import get_maimai_uid
 from src.utils.helpers.remi_service_helper import RemiServiceHelper, UserBindType, MaimaiBindInfo
 
 require("nonebot_plugin_alconna")
 
 from nonebot_plugin_alconna import Query as AlcQuery
 
-from src.plugins.maimaidx.plugins.maicn.config import Config
+from src.plugins.maicn.config import Config
 
-from src.plugins.maimaidx.plugins.maicn.commands.matchers import maicn_matcher, lx_matcher, divingfish_matcher
+from src.plugins.maicn.commands.matchers import maicn_matcher, lx_matcher, divingfish_matcher
 
 config = get_plugin_config(Config)
 
