@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "casbin>=1.17.6",
     "fastapi>=0.116.0",
     "httpx>=0.28.1",
     "lxml>=5.4.0",
@@ -12,6 +13,8 @@ dependencies = [
     "nonebot-adapter-onebot>=2.4.6",
     "nonebot-plugin-alconna>=0.58.1",
     "nonebot2[fastapi]>=2.4.2",
+    "pillow>=11.3.0",
+    "psd-tools>=1.10.8",
     "pydantic-core>=2.33.2",
     "wahlap-mai-ass-expander",
 ]
