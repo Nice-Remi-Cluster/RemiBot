@@ -1,4 +1,3 @@
-
 from arclet.alconna import Alconna, Args, Subcommand
 from nepattern import AnyString
 
@@ -58,5 +57,4 @@ maicn_alc = Alconna(
         Args["source", alias_divingfish + alias_luoxue],
         help_text="输出自己的b50成绩",
     ),
-
 )

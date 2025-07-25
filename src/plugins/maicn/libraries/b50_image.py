@@ -347,9 +347,7 @@ class B50ImageGenerator:
             logger.error(f"获取评级图片路径失败: {e}")
             return None
 
-    def _get_combo_status_image_path(
-        self, combo_status: str | None
-    ) -> Path | None:
+    def _get_combo_status_image_path(self, combo_status: str | None) -> Path | None:
         """根据单人评价状态获取图片路径"""
         if not combo_status:
             return None

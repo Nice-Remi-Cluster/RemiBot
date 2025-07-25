@@ -1,4 +1,3 @@
-
 import httpx
 from maimai_py import (
     DivingFishProvider,

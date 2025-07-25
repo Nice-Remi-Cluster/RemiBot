@@ -133,18 +133,13 @@ class RemiServiceHelper:
         Returns:
             成功返回响应JSON，失败返回None
         """
-        data = {
-            "username": username,
-            "password": password
-        }
-        
+        data = {"username": username, "password": password}
+
         if bind_name:
             data["bind_name"] = bind_name
 
         resp = await self._client.post(
-            "/v1/user/add-divingfish-bind",
-            params={"uuid": uuid},
-            json=data
+            "/v1/user/add-divingfish-bind", params={"uuid": uuid}, json=data
         )
 
         if resp.status_code == 200:

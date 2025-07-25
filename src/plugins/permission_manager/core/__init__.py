@@ -9,7 +9,7 @@ from .models import PermissionContext, PermissionScope
 
 __all__ = [
     "permission_manager",
-    "require_permission", 
+    "require_permission",
     "admin_only",
     "check_user_permission",
     "PermissionContext",

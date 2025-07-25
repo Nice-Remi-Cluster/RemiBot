@@ -51,4 +51,8 @@ class LXNSClient:
             f"resp:{resp.json()}"
         )
 
-        return bool(resp.status_code == 200 and resp.json()["success"] is True and resp.json()["code"] == 200)
+        return bool(
+            resp.status_code == 200
+            and resp.json()["success"] is True
+            and resp.json()["code"] == 200
+        )
