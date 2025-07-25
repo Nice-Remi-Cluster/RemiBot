@@ -1,6 +1,6 @@
 import json
 
-from loguru import logger
+from nonebot import logger
 from nonebot import get_plugin_config
 from arclet.alconna import SubcommandResult
 from nonebot import require
@@ -11,7 +11,12 @@ from src.plugins.maicn.alias import alias_luoxue, alias_divingfish
 from src.plugins.maicn.libraries import get_maimai_user_preview_info
 from nonebot.adapters.onebot.v11.event import MessageEvent
 from src.plugins.maicn.libraries import get_maimai_uid
-from src.utils.helpers.remi_service_helper import RemiServiceHelper, UserBindType, MaimaiBindInfo
+from src.utils.helpers.remi_service_helper import (
+    RemiServiceHelper,
+    UserBindType,
+    MaimaiBindInfo,
+)
+from src.plugins.maicn.messages import Messages
 
 require("nonebot_plugin_alconna")
 
@@ -19,16 +24,22 @@ from nonebot_plugin_alconna import Query as AlcQuery
 
 from src.plugins.maicn.config import Config
 
-from src.plugins.maicn.commands.matchers import maicn_matcher, lx_matcher, divingfish_matcher
+from src.plugins.maicn.commands.matchers import (
+    maicn_matcher,
+    lx_matcher,
+    divingfish_matcher,
+)
+from src.plugins.maicn.commands.cmds.helpers import (
+    get_remi_uuid_or_finish,
+)
+from src.plugins.permission_manager import require_permission
 
 config = get_plugin_config(Config)
 
 
 @maicn_matcher.assign("add.sgwcmaid")
-async def _(
-        event: MessageEvent,
-        alc_result: AlcQuery = AlcQuery("add", 0)
-):
+@require_permission("maicn", "add")
+async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("add", 0)):
     r: SubcommandResult = alc_result.result
 
     user_qq = event.get_user_id()
@@ -36,28 +47,29 @@ async def _(
     bind_name = r.args.get("bind_name", None)
 
     remi_service_helper = RemiServiceHelper(config.remi_service_base_url)
-
-    remi_uuid = await remi_service_helper.get_uuid_or_create_by_qq(user_qq)
-    if not remi_uuid:
-        await maicn_matcher.finish("获取用户uuid失败，请联系管理员")
+    remi_uuid = await get_remi_uuid_or_finish(user_qq, remi_service_helper)
 
     mai_uid = 0
     try:
         mai_uid = await get_maimai_uid(sgwcmaid)
     except QrCodeExpired:
-        await maicn_matcher.finish("二维码已过期")
+        await maicn_matcher.finish(Messages.ERROR_QR_EXPIRED)
     except QrCodeInvalid:
-        await maicn_matcher.finish("二维码无效")
+        await maicn_matcher.finish(Messages.ERROR_QR_INVALID)
     except Exception as e:
-        logger.exception(e)
-        await maicn_matcher.finish(f"添加失败，Error: {e}")
+        logger.exception(f"获取maimai UID失败: {e}")
+        await maicn_matcher.finish(Messages.ERROR_ADD_FAILED)
 
-    if not await remi_service_helper.user_add_bind(remi_uuid, UserBindType.MaimaiCN, mai_uid, bind_name):
-        await maicn_matcher.finish("添加失败，请联系管理员查看日志")
+    if not await remi_service_helper.user_add_bind(
+        remi_uuid, UserBindType.MaimaiCN, mai_uid, bind_name
+    ):
+        await maicn_matcher.finish(Messages.ERROR_ADD_FAILED)
 
-    await maicn_matcher.finish("添加乌蒙账号成功")
+    await maicn_matcher.finish(Messages.SUCCESS_MAIMAI_ADDED)
+
 
 @maicn_matcher.assign("bind.source.bind_name")
+@require_permission("maicn", "bind")
 async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("bind", 0)):
     r: SubcommandResult = alc_result.result
     user_qq = event.get_user_id()
@@ -66,7 +78,7 @@ async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("bind", 0)):
     bind_name = r.args["bind_name"]
 
     remi_helper = RemiServiceHelper(config.remi_service_base_url)
-    remi_uuid = await remi_helper.get_uuid_or_create_by_qq(user_qq)
+    remi_uuid = await get_remi_uuid_or_finish(user_qq, remi_helper)
 
     param = ""
     if source in alias_divingfish:
@@ -75,7 +87,7 @@ async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("bind", 0)):
         param = "luoxue_bind_name"
 
     if not param:
-        return await maicn_matcher.finish("未找到绑定源")
+        return await maicn_matcher.finish(Messages.ERROR_BIND_SOURCE_NOT_FOUND)
 
     binds = await remi_helper.update_current_maimai_bind(
         **{
@@ -84,78 +96,72 @@ async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("bind", 0)):
         }
     )
     if not binds:
-        return await maicn_matcher.finish("更新绑定失败")
+        return await maicn_matcher.finish(Messages.ERROR_UPDATE_FAILED)
 
-    mai_preview_info = await get_maimai_user_preview_info(int(binds["maimai"]["bind_content"]))
+    mai_preview_info = await get_maimai_user_preview_info(
+        int(binds["maimai"]["bind_content"])
+    )
     return await maicn_matcher.finish(
-        f"更新绑定成功, 新的绑定信息如下\n"
-        f"=============\n"
-        f"MaimaiDX:\n"
-        f"{mai_preview_info['userName']}\n"
-        f"Rating: {mai_preview_info['playerRating']}\n"
-        f"-------------\n"
-        f"档案绑定信息:\n"
-        f"{binds['others']}"
+        Messages.format_bind_update_success(
+            mai_preview_info["userName"],
+            mai_preview_info["playerRating"],
+            binds["others"],
+        )
     )
 
+
 @maicn_matcher.assign("current.profile")
+@require_permission("maicn", "current")
 async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("current", 0)):
     r: SubcommandResult = alc_result.result
     profile = r.args.get("profile")
     user_qq = event.get_user_id()
     remi_helper = RemiServiceHelper(config.remi_service_base_url)
-    remi_uuid = await remi_helper.get_uuid_or_create_by_qq(user_qq)
+    remi_uuid = await get_remi_uuid_or_finish(user_qq, remi_helper)
 
     result = await remi_helper.switch_current_maimai_bind(remi_uuid, profile)
     if not result:
-        await maicn_matcher.finish("切换失败，可能是没有此档案或其他原因")
+        await maicn_matcher.finish(Messages.ERROR_SWITCH_FAILED)
 
     mai_bind = result["maimai"]
     mai_preview_info = await get_maimai_user_preview_info(int(mai_bind["bind_content"]))
     await maicn_matcher.finish(
-        f"切换到maimai档案:\n"
-        f"=============\n"
-        f"MaimaiDX:\n"
-        f"{mai_preview_info['userName']}\n"
-        f"Rating: {mai_preview_info['playerRating']}\n"
-        f"-------------\n"
-        f"档案绑定信息:\n"
-        f"{result['others']}"
+        Messages.format_profile_switch_success(
+            mai_preview_info["userName"],
+            mai_preview_info["playerRating"],
+            result["others"],
+        )
     )
 
+
 @maicn_matcher.assign("current")
+@require_permission("maicn", "current")
 async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("current", 0)):
     r: SubcommandResult = alc_result.result
 
     remi_helper = RemiServiceHelper(config.remi_service_base_url)
-
     user_qq = event.get_user_id()
-
-    remi_uuid = await remi_helper.get_uuid_or_create_by_qq(user_qq)
+    remi_uuid = await get_remi_uuid_or_finish(user_qq, remi_helper)
 
     current_maimai_binds = await remi_helper.get_current_maimai_bind_info(remi_uuid)
 
     if not current_maimai_binds:
-        await maicn_matcher.finish("未绑定任何乌蒙账号")
+        await maicn_matcher.finish(Messages.HINT_NO_MAIMAI_BIND)
 
     mai_bind = current_maimai_binds["maimai"]
     mai_preview_info = await get_maimai_user_preview_info(int(mai_bind["bind_content"]))
     await maicn_matcher.finish(
-        f"当前使用的maimaidx档案如下:\n"
-        f"=============\n"
-        f"MaimaiDX:\n"
-        f"{mai_preview_info['userName']}\n"
-        f"Rating: {mai_preview_info['playerRating']}\n"
-        f"-------------\n"
-        f"档案绑定信息:\n"
-        f"{current_maimai_binds['others']}"
+        Messages.format_current_profile(
+            mai_preview_info["userName"],
+            mai_preview_info["playerRating"],
+            current_maimai_binds["others"],
+        )
     )
 
+
 @lx_matcher.assign("add.friend_code")
-async def _(
-        event: MessageEvent,
-        alc_result: AlcQuery = AlcQuery("add", 0)
-):
+@require_permission("lxns", "add")
+async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("add", 0)):
     r: SubcommandResult = alc_result.result
 
     user_qq = event.get_user_id()
@@ -163,36 +169,30 @@ async def _(
     bind_name = r.args.get("bind_name", None)
 
     remi_service_helper = RemiServiceHelper(config.remi_service_base_url)
+    remi_uuid = await get_remi_uuid_or_finish(user_qq, remi_service_helper)
 
-    remi_uuid = await remi_service_helper.get_uuid_or_create_by_qq(user_qq)
-    if not remi_uuid:
-        await maicn_matcher.finish("获取用户uuid失败，请联系管理员")
+    if not await remi_service_helper.user_add_bind(
+        remi_uuid, UserBindType.Luoxue, friend_code, bind_name
+    ):
+        await maicn_matcher.finish(Messages.ERROR_ADD_FAILED)
 
-    if not await remi_service_helper.user_add_bind(remi_uuid, UserBindType.Luoxue, friend_code, bind_name):
-        await maicn_matcher.finish("添加失败，请联系管理员查看日志")
-
-    await maicn_matcher.finish("添加落雪查分器成功")
+    await maicn_matcher.finish(Messages.SUCCESS_LXNS_ADDED)
 
 
 @lx_matcher.assign("create")
-async def _(
-        event: MessageEvent,
-        alc_result: AlcQuery = AlcQuery("create", 0)
-):
+@require_permission("lxns", "create")
+async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("create", 0)):
     r: SubcommandResult = alc_result.result
 
     user_qq = event.get_user_id()
 
     remi_service_helper = RemiServiceHelper(config.remi_service_base_url)
     lx_client = LXNSClient()
-
-    remi_uuid = await remi_service_helper.get_uuid_or_create_by_qq(user_qq)
-    if not remi_uuid:
-        await maicn_matcher.finish("获取用户uuid失败，请联系管理员")
+    remi_uuid = await get_remi_uuid_or_finish(user_qq, remi_service_helper)
 
     current_bind = await remi_service_helper.get_current_maimai_bind_info(remi_uuid)
     if not current_bind:
-        await maicn_matcher.finish("未绑定任何乌蒙账号")
+        await maicn_matcher.finish(Messages.HINT_NO_MAIMAI_BIND)
 
     current_bind: MaimaiBindInfo
     lx_bind = None
@@ -201,18 +201,16 @@ async def _(
             lx_bind = bind
             break
     if not lx_bind:
-        await maicn_matcher.finish("当前maimai档案未绑定落雪查分器")
+        await maicn_matcher.finish(Messages.HINT_NO_LXNS_BIND)
 
     friend_code = lx_bind["bind_content"]
 
     if info := await lx_client.maimai_player(friend_code):
-        # info_formatted = json.dumps(info, ensure_ascii=False, indent=4, separators=(',', ': '))
-        await lx_matcher.finish(f"该档案绑定的好友码已经有了对应的档案(\n{info['name']})")
+        await lx_matcher.finish(Messages.format_lxns_profile_exists(info["name"]))
 
     mai_uid = current_bind["maimai"]["bind_content"]
     mai_preview_info = await get_maimai_user_preview_info(int(mai_uid))
     mai_user_name = mai_preview_info["userName"]
-
 
     player_data = {
         "name": mai_user_name,
@@ -222,43 +220,40 @@ async def _(
         "class_rank": 0,
         "star": 0,
         "trophy_name": "新人出道",
-        "icon": {
-            "id": 1
-        },
-        "name_plate": {
-            "id": 1
-        },
-        "frame": {
-            "id": 1
-        }
+        "icon": {"id": 1},
+        "name_plate": {"id": 1},
+        "frame": {"id": 1},
     }
 
     if await lx_client.update_maimai_player(player_data):
         player_info = await lx_client.maimai_player(friend_code)
-        player_info_formatted = json.dumps(player_info, ensure_ascii=False, indent=4, separators=(',', ': '))
-        await lx_matcher.finish(f"创建落雪档案成功，档案内容如下:\n{player_info_formatted}")
+        player_info_formatted = json.dumps(
+            player_info, ensure_ascii=False, indent=4, separators=(",", ": ")
+        )
+        await lx_matcher.finish(
+            Messages.format_lxns_create_success_with_info(player_info_formatted)
+        )
     else:
-        await lx_matcher.finish("创建落雪档案失败")
+        await lx_matcher.finish(Messages.ERROR_CREATE_LXNS_FAILED)
 
 
-@divingfish_matcher.assign("add.import_token")
-async def _(
-        event: MessageEvent,
-        alc_result: AlcQuery = AlcQuery("add", 0)
-):
+@divingfish_matcher.assign("add.username.password")
+@require_permission("divingfish", "add")
+async def _(event: MessageEvent, alc_result: AlcQuery = AlcQuery("add", 0)):
     r: SubcommandResult = alc_result.result
 
     user_qq = event.get_user_id()
-    import_token = r.args["import_token"]
+    username = r.args["username"]
+    password = r.args["password"]
     bind_name = r.args.get("bind_name", None)
 
     remi_service_helper = RemiServiceHelper(config.remi_service_base_url)
+    remi_uuid = await get_remi_uuid_or_finish(user_qq, remi_service_helper)
 
-    remi_uuid = await remi_service_helper.get_uuid_or_create_by_qq(user_qq)
-    if not remi_uuid:
-        await maicn_matcher.finish("获取用户uuid失败，请联系管理员")
+    # 使用新的专用水鱼绑定API
+    if not await remi_service_helper.user_add_divingfish_bind(
+        remi_uuid, username, password, bind_name
+    ):
+        await maicn_matcher.finish(Messages.ERROR_ADD_FAILED)
 
-    if not await remi_service_helper.user_add_bind(remi_uuid, UserBindType.DivingFish, import_token, bind_name):
-        await maicn_matcher.finish("添加失败，请联系管理员查看日志")
-
-    await maicn_matcher.finish("添加水鱼查分器成功")
+    await maicn_matcher.finish(Messages.SUCCESS_SHUIYU_ADDED)

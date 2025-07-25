@@ -7,18 +7,19 @@ from nonebot import get_plugin_config, require
 from nonebot.adapters.onebot.v11 import MessageEvent
 from nonebot.plugin import PluginMetadata
 
-from .config import Config
 from src.utils.helpers.alconna_helper import alc_header, alc_header_cn
+
+from .config import Config
 
 require("nonebot_plugin_alconna")
 
-from nonebot_plugin_alconna import on_alconna, CommandResult, AlconnaResult
+from nonebot_plugin_alconna import AlconnaResult, CommandResult, on_alconna
 
 __plugin_meta__ = PluginMetadata(
     name="roll",
     description="随机数",
     usage=(
-"""
+        """
 /roll - 生成0到100的随机数
 /roll [数字] - 生成0到指定数字的随机数
 /roll [选项1] [选项2] ... - 从提供的选项中随机选择一个
@@ -26,20 +27,16 @@ __plugin_meta__ = PluginMetadata(
     ),
 )
 
-alc = Alconna(
-    f"{alc_header}roll",
-    Args["options", MultiVar(AnyString, flag="*")]
-)
+alc = Alconna(f"{alc_header}roll", Args["options", MultiVar(AnyString, flag="*")])
 
-alc.shortcut(f"{alc_header_cn}随机数", command=f"{alc_header}roll")
-alc.shortcut(f"{alc_header_cn}随机", command=f"{alc_header}roll")
+alc.shortcut(f"{alc_header_cn}随机数", command="roll")
+alc.shortcut(f"{alc_header_cn}随机", command="roll")
 
-roll_cmd = on_alconna(alc, priority=5, block=True)
+roll_cmd = on_alconna(alc, priority=5, block=True, use_cmd_start=False)
 
 
 @roll_cmd.handle()
 async def handle_roll(event: MessageEvent, arp: CommandResult):
-
     options = arp.result.main_args["options"]
 
     # 没有参数，默认是0-100的随机数
@@ -57,4 +54,3 @@ async def handle_roll(event: MessageEvent, arp: CommandResult):
     else:
         choice = random.choice(options)
         await roll_cmd.finish(f"{choice}")
-

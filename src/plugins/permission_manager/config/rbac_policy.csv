@@ -1,0 +1,22 @@
+# 角色权限定义 - 允许策略
+p, admin, *, *, global, *, allow
+p, admin, *, *, group, *, allow
+p, admin, *, *, private, *, allow
+p, guest, *, *, global, *, allow
+p, guest, *, *, group, *, allow
+p, guest, *, *, private, *, allow
+
+# 个人黑名单 - 拒绝策略示例
+# p, 用户ID, 功能名:操作, 访问类型, 范围, 范围ID, 效果
+# 例如：禁止用户123456使用maicn功能
+# p, 123456, maicn:*, access, global, *, deny
+# p, 123456, maicn:*, access, group, *, deny
+# p, 123456, maicn:*, access, private, *, deny
+
+# 实际黑名单示例（可以取消注释来测试）
+# p, 123456, maicn:*, access, global, *, deny
+
+# 用户角色分配
+g, 1483492332, admin, global, *
+g, 1483492332, admin, private, *
+g, 1483492332, admin, group, *

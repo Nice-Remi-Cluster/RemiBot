@@ -20,4 +20,3 @@ class Config(BaseModel):
     proxy_port: int
     proxy_username: str
     proxy_password: str
-

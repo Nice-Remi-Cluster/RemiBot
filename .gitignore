@@ -173,9 +173,13 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# resource
+resources/
+
 
 .idea
 .vscode
 larg
 example.txt
 test.py
+.trae/
